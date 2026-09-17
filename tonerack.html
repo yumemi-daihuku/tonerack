@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TONERACK ― 作曲家のための音楽理論ラック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1c1a17;
+    --bg-grain: #201d19;
+    --panel: #262320;
+    --panel-raised: #2c2823;
+    --panel-inset: #181613;
+    --border: #40392f;
+    --border-soft: #332e27;
+    --text: #f1ece2;
+    --text-dim: #9b9284;
+    --text-faint: #6c6558;
+    --amber: #e7a33d;
+    --amber-dim: #8a6528;
+    --teal: #6fc2b4;
+    --teal-dim: #3f6f66;
+    --led-red: #e2583e;
+    --radius-panel: 10px;
+    --radius-btn: 4px;
+    --radius-key: 3px;
+    --font-display: 'Space Grotesk', 'Hiragino Sans', sans-serif;
+    --font-body: 'Inter', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ -webkit-text-size-adjust: 100%; }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(231,163,61,0.05), transparent),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  a{ color: var(--amber); }
+
+  ::selection{ background: var(--amber-dim); color: var(--text); }
+
+  :focus-visible{
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  button{ font-family: inherit; }
+
+  .wrap{
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header.site{
+    padding: 36px 20px 20px;
+    max-width: 1080px;
+    margin: 0 auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .brand h1{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: 0.02em;
+    margin: 0 0 6px;
+    color: var(--text);
+  }
+  .brand h1 span{ color: var(--amber); }
+  .brand p{
+    margin:0;
+    color: var(--text-dim);
+    font-size: 14.5px;
+  }
+
+  /* ---------- Transport bar ---------- */
+  .transport{
+    display:flex;
+    align-items:center;
+    gap: 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 12px 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .transport .field{
+    display:flex;
+    flex-direction:column;
+    gap: 4px;
+  }
+  .transport label{
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .bpm-display{
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--amber);
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    padding: 3px 10px;
+    min-width: 66px;
+    text-align:center;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .bpm-slider{
+    width: 140px;
+    accent-color: var(--amber);
+  }
+  .transport .divider{
+    width:1px; height: 34px; background: var(--border);
+  }
+
+  /* ---------- Tabs (radio + css) ---------- */
+  .tabbar{
+    display:flex;
+    gap: 6px;
+    margin: 26px 0 0;
+    flex-wrap: wrap;
+  }
+  .tabbar input[type="radio"]{
+    position:absolute;
+    opacity:0;
+    pointer-events:none;
+  }
+  .tabbar label{
+    cursor:pointer;
+    padding: 10px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: var(--radius-btn) var(--radius-btn) 0 0;
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 500;
+    user-select:none;
+    transition: color .15s ease, background .15s ease;
+  }
+  .tabbar label:hover{ color: var(--text); }
+  .tabbar input:focus-visible + label{ outline: 2px solid var(--amber); outline-offset: -2px; }
+
+  #tab-progression:checked ~ .tabbar label[for="tab-progression"],
+  #tab-scale:checked ~ .tabbar label[for="tab-scale"],
+  #tab-search:checked ~ .tabbar label[for="tab-search"],
+  #tab-metronome:checked ~ .tabbar label[for="tab-metronome"]{
+    background: var(--panel-raised);
+    color: var(--text);
+    box-shadow: inset 0 2px 0 var(--amber);
+  }
+
+  .panels{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 0 var(--radius-panel) var(--radius-panel) var(--radius-panel);
+    padding: 28px;
+  }
+  .panel{ display:none; }
+  #tab-progression:checked ~ .panels #panel-progression,
+  #tab-scale:checked ~ .panels #panel-scale,
+  #tab-search:checked ~ .panels #panel-search,
+  #tab-metronome:checked ~ .panels #panel-metronome{ display:block; }
+
+  @media (max-width: 600px){
+    .tabbar label{ padding: 9px 12px; font-size: 13px; }
+    .panels{ padding: 20px 16px; }
+  }
+
+  h2.panel-title{
+    font-family: var(--font-display);
+    font-size: 19px;
+    margin: 0 0 6px;
+    color: var(--text);
+  }
+  p.panel-desc{
+    margin: 0 0 22px;
+    color: var(--text-dim);
+    font-size: 14px;
+    max-width: 60ch;
+  }
+
+  .row{
+    display:flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items:flex-end;
+    margin-bottom: 20px;
+  }
+  .field-group{ display:flex; flex-direction:column; gap:6px; }
+  .field-group label{ font-size: 12px; color: var(--text-faint); }
+
+  select, input[type="text"], input[type="number"]{
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-btn);
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: var(--font-body);
+  }
+  select:focus, input:focus{ outline: 2px solid var(--amber); outline-offset: 1px; }
+
+  .btn{
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-btn);
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .btn:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  .btn.primary{
+    background: linear-gradient(180deg, #f0b455, var(--amber));
+    color: #221a0d;
+    border-color: var(--amber);
+  }
+  .btn.primary:hover{ filter: brightness(1.06); color:#221a0d; }
+  .btn.primary.is-playing{
+    background: linear-gradient(180deg, #ec6b52, var(--led-red));
+    border-color: var(--led-red);
+    color: #2a1109;
+  }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+  /* ---------- Progression chips ---------- */
+  .chord-strip{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 20px 0 8px;
+  }
+  .chord-chip{
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 16px;
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    padding: 10px 16px;
+    min-width: 56px;
+    text-align:center;
+    color: var(--text-dim);
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .chord-chip.active{
+    background: var(--amber-dim);
+    border-color: var(--amber);
+    color: #2a1c07;
+    background: var(--amber);
+  }
+
+  /* ---------- Piano ---------- */
+  .piano-wrap{
+    overflow-x: auto;
+    padding: 4px 0 10px;
+    margin-top: 18px;
+  }
+  .piano{
+    position:relative;
+    height: 128px;
+    display:flex;
+    width: max-content;
+  }
+  .white-key{
+    position:relative;
+    width: 38px;
+    height: 100%;
+    background: #ece6d8;
+    border: 1px solid #171512;
+    border-radius: 0 0 var(--radius-key) var(--radius-key);
+    flex: 0 0 auto;
+    transition: background .1s ease;
+  }
+  .white-key .label{
+    position:absolute;
+    bottom: 6px;
+    left: 0; right:0;
+    text-align:center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: #746b56;
+  }
+  .white-key.hit{ background: var(--amber); }
+  .white-key.hit.root{ background: var(--teal); }
+  .black-key{
+    position:absolute;
+    top:0;
+    width: 24px;
+    height: 62%;
+    background: #14120f;
+    border: 1px solid #000;
+    border-radius: 0 0 var(--radius-key) var(--radius-key);
+    z-index: 2;
+  }
+  .black-key.hit{ background: var(--amber-dim); }
+  .black-key.hit.root{ background: var(--teal-dim); }
+
+  .note-list{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .note-pill{
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .note-pill.root{ color: var(--teal); border-color: var(--teal-dim); }
+
+  /* ---------- Chord search ---------- */
+  .search-result{
+    margin-top: 22px;
+    min-height: 20px;
+  }
+  .search-result .chord-name{
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--amber);
+  }
+  .search-hint{ color: var(--text-faint); font-size: 13px; margin-top: 8px; }
+
+  .builder{
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .builder-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .builder-head h3{
+    font-family: var(--font-display);
+    font-size: 15px;
+    margin: 0;
+    color: var(--text);
+  }
+  .chord-chip.removable{
+    cursor: pointer;
+    position: relative;
+  }
+  .chord-chip.removable:hover{
+    border-color: var(--led-red);
+    color: var(--led-red);
+  }
+
+  .saved-progressions{
+    margin-top: 18px;
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .saved-prog-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    padding: 8px 12px;
+  }
+  .saved-prog-name{
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    flex: 0 0 auto;
+    min-width: 90px;
+  }
+  .saved-prog-chords{
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-dim);
+    flex: 1 1 auto;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .saved-prog-del{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    border-radius: var(--radius-btn);
+    padding: 4px 9px;
+    font-size: 12px;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .saved-prog-del:hover{ border-color: var(--led-red); color: var(--led-red); }
+
+  /* ---------- Metronome ---------- */
+  .metro-visual{
+    display:flex;
+    gap: 10px;
+    margin: 22px 0;
+  }
+  .metro-dot{
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--panel-inset);
+    border: 1px solid var(--border);
+    transition: background .05s ease, box-shadow .05s ease;
+  }
+  .metro-dot.lit{
+    background: var(--amber);
+    box-shadow: 0 0 12px 2px rgba(231,163,61,0.6);
+  }
+  .metro-dot.lit.accent{
+    background: var(--led-red);
+    box-shadow: 0 0 14px 3px rgba(226,88,62,0.65);
+  }
+
+  footer.site{
+    max-width: 1080px;
+    margin: 40px auto 0;
+    padding: 20px;
+    color: var(--text-faint);
+    font-size: 12.5px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">
+    <h1>TONE<span>RACK</span></h1>
+    <p>作曲家のための音楽理論ラック ― コード進行・スケール・コード検索・メトロノーム</p>
+  </div>
+
+  <div class="transport">
+    <div class="field">
+      <label for="bpmSlider">テンポ (BPM)</label>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <input type="range" id="bpmSlider" class="bpm-slider" min="40" max="240" value="100">
+        <span class="bpm-display" id="bpmDisplay">100</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="tabbar">
+    <input type="radio" name="tab" id="tab-progression" checked>
+    <label for="tab-progression">コード進行</label>
+
+    <input type="radio" name="tab" id="tab-scale">
+    <label for="tab-scale">スケール</label>
+
+    <input type="radio" name="tab" id="tab-search">
+    <label for="tab-search">コード検索</label>
+
+    <input type="radio" name="tab" id="tab-metronome">
+    <label for="tab-metronome">メトロノーム</label>
+
+    <div class="panels">
+
+      <!-- ===================== コード進行 ===================== -->
+      <section class="panel" id="panel-progression">
+        <h2 class="panel-title">コード進行プレイヤー</h2>
+        <p class="panel-desc">定番のコード進行をキーを変えて再生できます。各コードは1小節ずつ鳴ります。</p>
+
+        <div class="row">
+          <div class="field-group">
+            <label for="progPreset">進行を選ぶ</label>
+            <select id="progPreset"></select>
+          </div>
+          <div class="field-group" id="progKeyGroup">
+            <label for="progKey">キー</label>
+            <select id="progKey"></select>
+          </div>
+          <button class="btn primary" id="progPlayBtn">再生</button>
+        </div>
+
+        <div class="chord-strip" id="progChordStrip"></div>
+        <p class="search-hint" id="progCustomHint" style="display:none;">「コード検索」タブでコードを集めて、名前を付けて保存するとここから選べます。</p>
+      </section>
+
+      <!-- ===================== スケール ===================== -->
+      <section class="panel" id="panel-scale">
+        <h2 class="panel-title">スケール表示</h2>
+        <p class="panel-desc">ルート音とスケールの種類を選ぶと、鍵盤上に構成音がハイライトされます。</p>
+
+        <div class="row">
+          <div class="field-group">
+            <label for="scaleRoot">ルート音</label>
+            <select id="scaleRoot"></select>
+          </div>
+          <div class="field-group">
+            <label for="scaleType">スケール</label>
+            <select id="scaleType"></select>
+          </div>
+          <button class="btn primary" id="scalePlayBtn">試聴</button>
+        </div>
+
+        <div class="piano-wrap"><div class="piano" id="scalePiano"></div></div>
+        <div class="note-list" id="scaleNoteList"></div>
+      </section>
+
+      <!-- ===================== コード検索 ===================== -->
+      <section class="panel" id="panel-search">
+        <h2 class="panel-title">コード検索</h2>
+        <p class="panel-desc">コードネームを入力すると構成音を調べて鳴らせます。ルートと種類から選ぶこともできます。</p>
+
+        <div class="row">
+          <div class="field-group" style="min-width:180px;">
+            <label for="chordSearchInput">コードネームを入力</label>
+            <input type="text" id="chordSearchInput" list="chordSuggestions" placeholder="例: Am7, C#dim, Gsus4">
+            <datalist id="chordSuggestions"></datalist>
+          </div>
+          <div class="field-group">
+            <label for="chordSearchRoot">ルート</label>
+            <select id="chordSearchRoot"></select>
+          </div>
+          <div class="field-group">
+            <label for="chordSearchType">種類</label>
+            <select id="chordSearchType"></select>
+          </div>
+          <button class="btn primary" id="chordSearchPlayBtn">再生</button>
+          <button class="btn" id="chordAddBtn">進行に追加 ＋</button>
+        </div>
+
+        <div class="search-result" id="chordSearchResult"></div>
+        <div class="piano-wrap"><div class="piano" id="searchPiano"></div></div>
+        <div class="note-list" id="searchNoteList"></div>
+        <p class="search-hint">対応表記: m / maj7 / m7 / 7 / dim / dim7 / aug / sus2 / sus4 / 6 / m6 / add9 / maj9 / m9 / 9 (シャープは # 、フラットは b)</p>
+
+        <div class="builder">
+          <div class="builder-head">
+            <h3>作成中の進行</h3>
+            <button class="btn" id="customClearBtn">クリア</button>
+          </div>
+          <p class="search-hint" id="customEmptyHint">「進行に追加」でコードを集めると、ここに並びます。クリックで削除できます。</p>
+          <div class="chord-strip" id="customProgChips"></div>
+
+          <div class="row" style="margin-top:16px;">
+            <div class="field-group" style="min-width:200px;">
+              <label for="progNameInput">この進行に名前を付けて保存</label>
+              <input type="text" id="progNameInput" placeholder="例: サビ用の進行">
+            </div>
+            <button class="btn primary" id="progSaveBtn">保存</button>
+          </div>
+
+          <div class="saved-progressions" id="savedProgList"></div>
+          <p class="search-hint">保存した進行はこのブラウザに保存され、次回このページを開いたときも残ります。「コード進行」タブのプルダウンから選んで再生できます。</p>
+
+          <div class="row" style="margin-top:14px;">
+            <button class="btn" id="exportProgBtn">ファイルに書き出す</button>
+            <button class="btn" id="importProgBtn">ファイルから読み込む</button>
+            <input type="file" id="importProgFile" accept=".json,application/json" style="display:none;">
+          </div>
+          <p class="search-hint" id="importStatus"></p>
+        </div>
+      </section>
+
+      <!-- ===================== メトロノーム ===================== -->
+      <section class="panel" id="panel-metronome">
+        <h2 class="panel-title">メトロノーム</h2>
+        <p class="panel-desc">上部のテンポに合わせてクリック音を鳴らします。拍子はプルダウンで変更できます。</p>
+
+        <div class="row">
+          <div class="field-group">
+            <label for="metroBeats">拍子</label>
+            <select id="metroBeats">
+              <option value="2">2拍子</option>
+              <option value="3">3拍子</option>
+              <option value="4" selected>4拍子</option>
+              <option value="6">6拍子</option>
+            </select>
+          </div>
+          <button class="btn primary" id="metroPlayBtn">開始</button>
+        </div>
+
+        <div class="metro-visual" id="metroVisual"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<footer class="site">
+  すべての音はブラウザ内で合成しています(音源ファイルの再生ではありません)。ヘッドホン推奨。
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     音楽理論エンジン
+  ============================================================ */
+  const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const FLAT_NAMES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+  const FLAT_ROOTS = new Set([5,10,3,8,1,6]); // F, Bb, Eb, Ab, Db, Gb
+
+  function spell(rootIndex, pitchClass){
+    const table = FLAT_ROOTS.has(rootIndex) ? FLAT_NAMES : SHARP_NAMES;
+    return table[((pitchClass % 12)+12)%12];
+  }
+
+  const CHORD_TYPES = {
+    maj:   { intervals:[0,4,7],        suffix:'' },
+    min:   { intervals:[0,3,7],        suffix:'m' },
+    dim:   { intervals:[0,3,6],        suffix:'dim' },
+    aug:   { intervals:[0,4,8],        suffix:'aug' },
+    maj7:  { intervals:[0,4,7,11],     suffix:'maj7' },
+    min7:  { intervals:[0,3,7,10],     suffix:'m7' },
+    dom7:  { intervals:[0,4,7,10],     suffix:'7' },
+    m7b5:  { intervals:[0,3,6,10],     suffix:'m7b5' },
+    dim7:  { intervals:[0,3,6,9],      suffix:'dim7' },
+    sus2:  { intervals:[0,2,7],        suffix:'sus2' },
+    sus4:  { intervals:[0,5,7],        suffix:'sus4' },
+    six:   { intervals:[0,4,7,9],      suffix:'6' },
+    m6:    { intervals:[0,3,7,9],      suffix:'m6' },
+    add9:  { intervals:[0,4,7,2],      suffix:'add9' },
+    maj9:  { intervals:[0,4,7,11,2],   suffix:'maj9' },
+    min9:  { intervals:[0,3,7,10,2],   suffix:'m9' },
+    dom9:  { intervals:[0,4,7,10,2],   suffix:'9' }
+  };
+
+  const QUALITY_ALIASES = {
+    '':'maj', 'M':'maj', 'maj':'maj',
+    'm':'min', 'min':'min', '-':'min',
+    'dim':'dim', 'o':'dim',
+    'aug':'aug', '+':'aug',
+    'maj7':'maj7', 'M7':'maj7',
+    'm7':'min7', 'min7':'min7', '-7':'min7',
+    '7':'dom7',
+    'm7b5':'m7b5', 'm7-5':'m7b5',
+    'dim7':'dim7',
+    'sus2':'sus2', 'sus4':'sus4', 'sus':'sus4',
+    '6':'six', 'maj6':'six',
+    'm6':'m6', 'min6':'m6',
+    'add9':'add9',
+    'maj9':'maj9', 'M9':'maj9',
+    'm9':'min9', 'min9':'min9',
+    '9':'dom9'
+  };
+
+  const SCALE_TYPES = {
+    major:      { label:'メジャースケール',        intervals:[0,2,4,5,7,9,11] },
+    minor:      { label:'ナチュラルマイナースケール', intervals:[0,2,3,5,7,8,10] },
+    harmonic:   { label:'ハーモニックマイナー',      intervals:[0,2,3,5,7,8,11] },
+    melodic:    { label:'メロディックマイナー',      intervals:[0,2,3,5,7,9,11] },
+    dorian:     { label:'ドリアン',                intervals:[0,2,3,5,7,9,10] },
+    phrygian:   { label:'フリジアン',              intervals:[0,1,3,5,7,8,10] },
+    lydian:     { label:'リディアン',              intervals:[0,2,4,6,7,9,11] },
+    mixolydian: { label:'ミクソリディアン',          intervals:[0,2,4,5,7,9,10] },
+    locrian:    { label:'ロクリアン',              intervals:[0,1,3,5,6,8,10] },
+    majpent:    { label:'メジャーペンタトニック',     intervals:[0,2,4,7,9] },
+    minpent:    { label:'マイナーペンタトニック',     intervals:[0,3,5,7,10] },
+    blues:      { label:'ブルーススケール',          intervals:[0,3,5,6,7,10] }
+  };
+
+  const PROGRESSIONS = {
+    canon:  { label:'カノン進行', chords:[[0,'maj'],[7,'maj'],[9,'min'],[4,'min'],[5,'maj'],[0,'maj'],[5,'maj'],[7,'maj']] },
+    oudou:  { label:'王道進行 (IV-V-iii-vi)', chords:[[5,'maj'],[7,'maj'],[4,'min'],[9,'min']] },
+    komuro: { label:'小室進行 (vi-IV-V-I)', chords:[[9,'min'],[5,'maj'],[7,'maj'],[0,'maj']] },
+    marusa: { label:'丸サ進行', chords:[[5,'maj7'],[4,'dom7'],[9,'min7'],[10,'dom7'],[2,'min7'],[7,'dom7'],[0,'maj7']] },
+    twoFiveOne: { label:'ツー・ファイブ・ワン (ii-V-I)', chords:[[2,'min7'],[7,'dom7'],[0,'maj7']] }
+  };
+
+  function chordNotes(rootIndex, qualityKey){
+    const type = CHORD_TYPES[qualityKey];
+    return type.intervals.map(iv => (rootIndex + iv) % 12);
+  }
+
+  function chordName(rootIndex, qualityKey){
+    return spell(rootIndex, rootIndex) + CHORD_TYPES[qualityKey].suffix;
+  }
+
+  function parseChordSymbol(str){
+    const m = str.trim().match(/^([A-Ga-g])([#b]?)(.*)$/);
+    if(!m) return null;
+    const letterMap = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+    let root = letterMap[m[1].toUpperCase()];
+    if(root === undefined) return null;
+    if(m[2] === '#') root = (root+1)%12;
+    if(m[2] === 'b') root = (root+11)%12;
+    let rest = m[3].trim();
+    let qualityKey = QUALITY_ALIASES[rest];
+    if(qualityKey === undefined){
+      // try case-insensitive fallback
+      const low = rest.toLowerCase();
+      const found = Object.keys(QUALITY_ALIASES).find(k => k.toLowerCase() === low);
+      qualityKey = found ? QUALITY_ALIASES[found] : undefined;
+    }
+    if(qualityKey === undefined) return null;
+    return { root, qualityKey };
+  }
+
+  /* ============================================================
+     Web Audio
+  ============================================================ */
+  let audioCtx = null;
+  function getCtx(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function noteFreq(pitchClass, octave){
+    // A4 = 440Hz, MIDI 69. C4 -> midi 60
+    const midi = (octave+1)*12 + pitchClass;
+    return 440 * Math.pow(2, (midi-69)/12);
+  }
+
+  function playNote(pitchClass, octave, startTime, duration, gainScale){
+    const ctx = getCtx();
+    const freq = noteFreq(pitchClass, octave);
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'triangle';
+    osc1.frequency.value = freq;
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = freq/2;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 3200;
+
+    const gain = ctx.createGain();
+    const peak = 0.22 * (gainScale || 1);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(peak, startTime + 0.02);
+    gain.gain.linearRampToValueAtTime(peak*0.6, startTime + duration*0.3);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(startTime); osc1.stop(startTime + duration + 0.05);
+    osc2.start(startTime); osc2.stop(startTime + duration + 0.05);
+
+    return { osc1, osc2, gain };
+  }
+
+  function playChord(pitchClasses, startTime, duration){
+    const scale = 1/Math.sqrt(pitchClasses.length);
+    return pitchClasses.map((pc, i) => playNote(pc, i===0 ? 3 : 4, startTime, duration, scale));
+  }
+
+  // 再生中のノードを即座に(クリックノイズを避けつつ)止める
+  function stopNoteNodes(nodes){
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    nodes.forEach(n => {
+      try{
+        n.gain.gain.cancelScheduledValues(now);
+        n.gain.gain.setValueAtTime(n.gain.gain.value, now);
+        n.gain.gain.linearRampToValueAtTime(0, now + 0.03);
+        n.osc1.stop(now + 0.04);
+        n.osc2.stop(now + 0.04);
+      }catch(e){ /* 既に停止済みの場合は無視 */ }
+    });
+  }
+
+  function playClick(startTime, accent){
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = accent ? 1400 : 900;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(accent ? 0.5 : 0.32, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.08);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + 0.09);
+  }
+
+  /* ============================================================
+     共通: BPM
+  ============================================================ */
+  const bpmSlider = document.getElementById('bpmSlider');
+  const bpmDisplay = document.getElementById('bpmDisplay');
+  let bpm = parseInt(bpmSlider.value, 10);
+  bpmSlider.addEventListener('input', () => {
+    bpm = parseInt(bpmSlider.value, 10);
+    bpmDisplay.textContent = bpm;
+  });
+
+  /* ============================================================
+     ピアノ鍵盤コンポーネント
+  ============================================================ */
+  const WHITE_OFFSETS = [0,2,4,5,7,9,11];
+  const BLACK_AFTER = { 0:1, 1:3, 3:6, 4:8, 5:10 }; // white-key index -> pitch class of black key following it (for offsets with a black key)
+
+  function buildPiano(container, octaves){
+    container.innerHTML = '';
+    const whiteKeyWidth = 38;
+    let whiteIndex = 0;
+    const blackKeys = [];
+
+    for(let o=0; o<octaves; o++){
+      WHITE_OFFSETS.forEach((pc, idx) => {
+        const key = document.createElement('div');
+        key.className = 'white-key';
+        key.dataset.pc = pc;
+        key.dataset.octave = 3+o;
+        if(pc === 0){
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.textContent = 'C' + (3+o);
+          key.appendChild(label);
+        }
+        container.appendChild(key);
+
+        // black key after this white key (except after E and B, idx 2 and 6)
+        if(idx !== 2 && idx !== 6){
+          blackKeys.push({ pc: pc+1, octave: 3+o, leftPos: (whiteIndex+1)*whiteKeyWidth - 12 });
+        }
+        whiteIndex++;
+      });
+    }
+
+    blackKeys.forEach(bk => {
+      const key = document.createElement('div');
+      key.className = 'black-key';
+      key.dataset.pc = bk.pc % 12;
+      key.dataset.octave = bk.octave;
+      key.style.left = bk.leftPos + 'px';
+      container.appendChild(key);
+    });
+
+    container.style.width = (whiteIndex * whiteKeyWidth) + 'px';
+  }
+
+  function highlightPiano(container, pitchClasses, rootPc){
+    const keys = container.querySelectorAll('.white-key, .black-key');
+    const set = new Set(pitchClasses.map(p => ((p%12)+12)%12));
+    keys.forEach(k => {
+      const pc = parseInt(k.dataset.pc, 10);
+      k.classList.remove('hit','root');
+      if(set.has(pc)){
+        k.classList.add('hit');
+        if(pc === rootPc) k.classList.add('root');
+      }
+    });
+  }
+
+  /* ============================================================
+     セレクトの初期化ヘルパー
+  ============================================================ */
+  function fillNoteSelect(select, preferFlatDefault){
+    for(let i=0;i<12;i++){
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = spell(i, i);
+      select.appendChild(opt);
+    }
+  }
+
+  /* ============================================================
+     IndexedDB (マイ進行の永続化)
+  ============================================================ */
+  const DB_NAME = 'tonerack-db';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'progressions';
+
+  function openDB(){
+    return new Promise((resolve, reject) => {
+      if(!window.indexedDB){ reject(new Error('IndexedDB not supported')); return; }
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains(STORE_NAME)){
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = (e) => resolve(e.target.result);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  const dbPromise = openDB().catch(err => {
+    console.warn('IndexedDBが利用できないため、マイ進行はこのセッション内のみ保持されます。', err);
+    return null;
+  });
+
+  async function idbGetAll(){
+    const db = await dbPromise;
+    if(!db) return [];
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  }
+
+  async function idbPut(record){
+    const db = await dbPromise;
+    if(!db) return;
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(record);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  }
+
+  async function idbDelete(id){
+    const db = await dbPromise;
+    if(!db) return;
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  }
+
+  /* ============================================================
+     コード進行パネル
+  ============================================================ */
+  const progPreset = document.getElementById('progPreset');
+  const progKey = document.getElementById('progKey');
+  const progKeyGroup = document.getElementById('progKeyGroup');
+  const progPlayBtn = document.getElementById('progPlayBtn');
+  const progChordStrip = document.getElementById('progChordStrip');
+  const progCustomHint = document.getElementById('progCustomHint');
+
+  Object.keys(PROGRESSIONS).forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = PROGRESSIONS[key].label;
+    progPreset.appendChild(opt);
+  });
+
+  const myProgGroup = document.createElement('optgroup');
+  myProgGroup.label = 'マイ進行';
+  progPreset.appendChild(myProgGroup);
+
+  fillNoteSelect(progKey);
+
+  let progTimers = [];
+  let progPlaying = false;
+  let progActiveNodes = [];
+
+  // 保存済みのマイ進行(コード検索タブで作成、絶対音なのでキー移調の対象外)
+  let savedProgressions = [];
+  let savedProgIdCounter = 1;
+
+  function refreshMyProgOptions(){
+    const currentValue = progPreset.value;
+    myProgGroup.innerHTML = '';
+    if(savedProgressions.length === 0){
+      const opt = document.createElement('option');
+      opt.value = 'custom:none';
+      opt.textContent = '(まだありません)';
+      opt.disabled = true;
+      myProgGroup.appendChild(opt);
+    } else {
+      savedProgressions.forEach(sp => {
+        const opt = document.createElement('option');
+        opt.value = 'custom:' + sp.id;
+        opt.textContent = sp.name;
+        myProgGroup.appendChild(opt);
+      });
+    }
+    // 選択していた進行が削除された場合以外は選択を維持
+    const stillExists = Array.from(progPreset.options).some(o => o.value === currentValue);
+    if(stillExists) progPreset.value = currentValue;
+  }
+  refreshMyProgOptions();
+
+  // 現在選択中の進行を { root, qualityKey } の絶対コード配列として返す
+  function resolveActiveChords(){
+    if(progPreset.value.startsWith('custom:')){
+      const id = progPreset.value.slice('custom:'.length);
+      const sp = savedProgressions.find(s => String(s.id) === id);
+      return sp ? sp.chords.map(c => ({ root: c.root, qualityKey: c.qualityKey })) : [];
+    }
+    const preset = PROGRESSIONS[progPreset.value];
+    if(!preset) return [];
+    const keyRoot = parseInt(progKey.value, 10);
+    return preset.chords.map(c => ({ root: (keyRoot + c[0]) % 12, qualityKey: c[1] }));
+  }
+
+  function renderProgChips(){
+    const isCustom = progPreset.value.startsWith('custom:');
+    progKeyGroup.style.display = isCustom ? 'none' : '';
+    const chords = resolveActiveChords();
+    progChordStrip.innerHTML = '';
+
+    if(isCustom && chords.length === 0){
+      progCustomHint.style.display = '';
+      progPlayBtn.disabled = true;
+      return;
+    }
+    progCustomHint.style.display = 'none';
+    progPlayBtn.disabled = false;
+
+    chords.forEach((c, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'chord-chip';
+      chip.textContent = chordName(c.root, c.qualityKey);
+      chip.dataset.index = i;
+      progChordStrip.appendChild(chip);
+    });
+  }
+  progPreset.addEventListener('change', renderProgChips);
+  progKey.addEventListener('change', renderProgChips);
+  renderProgChips();
+
+  function stopProgression(){
+    progTimers.forEach(t => clearTimeout(t));
+    progTimers = [];
+    stopNoteNodes(progActiveNodes);
+    progActiveNodes = [];
+    progPlaying = false;
+    progPlayBtn.textContent = '再生';
+    progPlayBtn.classList.remove('is-playing');
+    progChordStrip.querySelectorAll('.chord-chip').forEach(c => c.classList.remove('active'));
+  }
+
+  progPlayBtn.addEventListener('click', () => {
+    if(progPlaying){ stopProgression(); return; }
+    const chords = resolveActiveChords();
+    if(chords.length === 0) return;
+
+    const ctx = getCtx();
+    const beatsPerChord = 4;
+    const chordDur = (60/bpm) * beatsPerChord;
+    const now = ctx.currentTime;
+
+    progPlaying = true;
+    progPlayBtn.textContent = '停止';
+    progPlayBtn.classList.add('is-playing');
+    progActiveNodes = [];
+
+    const chips = progChordStrip.querySelectorAll('.chord-chip');
+
+    chords.forEach((c, i) => {
+      const notes = chordNotes(c.root, c.qualityKey);
+      const start = now + i*chordDur;
+      const nodes = playChord(notes, start, chordDur*0.92);
+      progActiveNodes.push(...nodes);
+
+      const t1 = setTimeout(() => {
+        chips.forEach(ch => ch.classList.remove('active'));
+        if(chips[i]) chips[i].classList.add('active');
+      }, i*chordDur*1000);
+      progTimers.push(t1);
+    });
+
+    const totalMs = chords.length * chordDur * 1000;
+    const tEnd = setTimeout(stopProgression, totalMs + 60);
+    progTimers.push(tEnd);
+  });
+
+  /* ============================================================
+     スケールパネル
+  ============================================================ */
+  const scaleRoot = document.getElementById('scaleRoot');
+  const scaleType = document.getElementById('scaleType');
+  const scalePlayBtn = document.getElementById('scalePlayBtn');
+  const scalePianoEl = document.getElementById('scalePiano');
+  const scaleNoteList = document.getElementById('scaleNoteList');
+
+  fillNoteSelect(scaleRoot);
+  Object.keys(SCALE_TYPES).forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = SCALE_TYPES[key].label;
+    scaleType.appendChild(opt);
+  });
+
+  buildPiano(scalePianoEl, 2);
+
+  function currentScaleNotes(){
+    const root = parseInt(scaleRoot.value, 10);
+    const intervals = SCALE_TYPES[scaleType.value].intervals;
+    return { root, notes: intervals.map(iv => (root+iv)%12) };
+  }
+
+  function renderScale(){
+    const { root, notes } = currentScaleNotes();
+    highlightPiano(scalePianoEl, notes, root);
+    scaleNoteList.innerHTML = '';
+    notes.forEach(pc => {
+      const pill = document.createElement('span');
+      pill.className = 'note-pill' + (pc === root ? ' root' : '');
+      pill.textContent = spell(root, pc);
+      scaleNoteList.appendChild(pill);
+    });
+  }
+  scaleRoot.addEventListener('change', renderScale);
+  scaleType.addEventListener('change', renderScale);
+  renderScale();
+
+  let scalePlaying = false;
+  scalePlayBtn.addEventListener('click', () => {
+    if(scalePlaying) return;
+    scalePlaying = true;
+    scalePlayBtn.disabled = true;
+    const ctx = getCtx();
+    const { notes } = currentScaleNotes();
+    const now = ctx.currentTime;
+    const noteDur = 60/bpm;
+    notes.forEach((pc, i) => {
+      playNote(pc, 4, now + i*noteDur, noteDur*0.85, 1);
+    });
+    // play the octave root to close the scale
+    playNote(notes[0], 5, now + notes.length*noteDur, noteDur*0.85, 1);
+    setTimeout(() => { scalePlaying = false; scalePlayBtn.disabled = false; }, (notes.length+1)*noteDur*1000 + 100);
+  });
+
+  /* ============================================================
+     コード検索パネル
+  ============================================================ */
+  const chordSearchInput = document.getElementById('chordSearchInput');
+  const chordSearchRoot = document.getElementById('chordSearchRoot');
+  const chordSearchType = document.getElementById('chordSearchType');
+  const chordSearchPlayBtn = document.getElementById('chordSearchPlayBtn');
+  const chordSearchResult = document.getElementById('chordSearchResult');
+  const searchPianoEl = document.getElementById('searchPiano');
+  const searchNoteList = document.getElementById('searchNoteList');
+  const chordSuggestions = document.getElementById('chordSuggestions');
+
+  fillNoteSelect(chordSearchRoot);
+  Object.keys(CHORD_TYPES).forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = CHORD_TYPES[key].suffix === '' ? 'メジャー (maj)' : CHORD_TYPES[key].suffix;
+    chordSearchType.appendChild(opt);
+  });
+
+  // datalist候補を生成
+  for(let r=0;r<12;r++){
+    Object.keys(CHORD_TYPES).forEach(qk => {
+      const opt = document.createElement('option');
+      opt.value = spell(r, r) + CHORD_TYPES[qk].suffix;
+      chordSuggestions.appendChild(opt);
+    });
+  }
+
+  buildPiano(searchPianoEl, 2);
+
+  let currentSearchChord = null;
+
+  function showChordResult(root, qualityKey){
+    currentSearchChord = { root, qualityKey };
+    const notes = chordNotes(root, qualityKey);
+    chordSearchResult.innerHTML = '<div class="chord-name">' + chordName(root, qualityKey) + '</div>';
+    highlightPiano(searchPianoEl, notes, root);
+    searchNoteList.innerHTML = '';
+    notes.forEach(pc => {
+      const pill = document.createElement('span');
+      pill.className = 'note-pill' + (pc === root ? ' root' : '');
+      pill.textContent = spell(root, pc);
+      searchNoteList.appendChild(pill);
+    });
+  }
+
+  function syncFromDropdowns(){
+    showChordResult(parseInt(chordSearchRoot.value,10), chordSearchType.value);
+    chordSearchInput.value = '';
+  }
+  chordSearchRoot.addEventListener('change', syncFromDropdowns);
+  chordSearchType.addEventListener('change', syncFromDropdowns);
+
+  chordSearchInput.addEventListener('input', () => {
+    const val = chordSearchInput.value.trim();
+    if(!val) return;
+    const parsed = parseChordSymbol(val);
+    if(parsed){
+      showChordResult(parsed.root, parsed.qualityKey);
+    }
+  });
+
+  chordSearchPlayBtn.addEventListener('click', () => {
+    if(!currentSearchChord) return;
+    const ctx = getCtx();
+    const notes = chordNotes(currentSearchChord.root, currentSearchChord.qualityKey);
+    playChord(notes, ctx.currentTime, 1.5);
+  });
+
+  // ---- マイ進行ビルダー ----
+  const chordAddBtn = document.getElementById('chordAddBtn');
+  const customProgChips = document.getElementById('customProgChips');
+  const customClearBtn = document.getElementById('customClearBtn');
+  const customEmptyHint = document.getElementById('customEmptyHint');
+  const progNameInput = document.getElementById('progNameInput');
+  const progSaveBtn = document.getElementById('progSaveBtn');
+  const savedProgList = document.getElementById('savedProgList');
+
+  // 作成中(まだ保存していない)のコード列
+  let customProgression = [];
+
+  function renderCustomChips(){
+    customProgChips.innerHTML = '';
+    customEmptyHint.style.display = customProgression.length === 0 ? '' : 'none';
+    customProgression.forEach((c, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'chord-chip removable';
+      chip.textContent = chordName(c.root, c.qualityKey);
+      chip.title = 'クリックして削除';
+      chip.addEventListener('click', () => {
+        customProgression.splice(i, 1);
+        renderCustomChips();
+      });
+      customProgChips.appendChild(chip);
+    });
+  }
+
+  function renderSavedProgList(){
+    savedProgList.innerHTML = '';
+    savedProgressions.forEach(sp => {
+      const row = document.createElement('div');
+      row.className = 'saved-prog-row';
+
+      const name = document.createElement('div');
+      name.className = 'saved-prog-name';
+      name.textContent = sp.name;
+      row.appendChild(name);
+
+      const chordsText = document.createElement('div');
+      chordsText.className = 'saved-prog-chords';
+      chordsText.textContent = sp.chords.map(c => chordName(c.root, c.qualityKey)).join('  -  ');
+      row.appendChild(chordsText);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'saved-prog-del';
+      delBtn.textContent = '削除';
+      delBtn.addEventListener('click', () => {
+        savedProgressions = savedProgressions.filter(s => s.id !== sp.id);
+        idbDelete(sp.id);
+        renderSavedProgList();
+        refreshMyProgOptions();
+        renderProgChips();
+      });
+      row.appendChild(delBtn);
+
+      savedProgList.appendChild(row);
+    });
+  }
+
+  chordAddBtn.addEventListener('click', () => {
+    if(!currentSearchChord) return;
+    customProgression.push({ root: currentSearchChord.root, qualityKey: currentSearchChord.qualityKey });
+    renderCustomChips();
+  });
+
+  customClearBtn.addEventListener('click', () => {
+    customProgression = [];
+    renderCustomChips();
+  });
+
+  progSaveBtn.addEventListener('click', () => {
+    if(customProgression.length === 0) return;
+    const typedName = progNameInput.value.trim();
+    const name = typedName || ('マイ進行' + savedProgIdCounter);
+    const id = savedProgIdCounter++;
+    const record = { id, name, chords: customProgression.slice() };
+    savedProgressions.push(record);
+    idbPut(record);
+
+    customProgression = [];
+    progNameInput.value = '';
+    renderCustomChips();
+    renderSavedProgList();
+    refreshMyProgOptions();
+    renderProgChips();
+  });
+
+  renderCustomChips();
+  renderSavedProgList();
+
+  // IndexedDBに保存済みのマイ進行を読み込む
+  (async function loadSavedProgressions(){
+    const records = await idbGetAll();
+    if(records.length > 0){
+      savedProgressions = records.slice().sort((a,b) => a.id - b.id);
+      savedProgIdCounter = savedProgressions.reduce((max,p) => Math.max(max, p.id), 0) + 1;
+      renderSavedProgList();
+      refreshMyProgOptions();
+      renderProgChips();
+    }
+  })();
+
+  // ---- 書き出し / 読み込み ----
+  const exportProgBtn = document.getElementById('exportProgBtn');
+  const importProgBtn = document.getElementById('importProgBtn');
+  const importProgFile = document.getElementById('importProgFile');
+  const importStatus = document.getElementById('importStatus');
+
+  exportProgBtn.addEventListener('click', () => {
+    const payload = {
+      tonerack_progressions: true,
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      progressions: savedProgressions.map(sp => ({
+        name: sp.name,
+        chords: sp.chords.map(c => ({ root: c.root, qualityKey: c.qualityKey }))
+      }))
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0,10);
+    a.download = 'tonerack-progressions-' + stamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importProgBtn.addEventListener('click', () => importProgFile.click());
+
+  importProgFile.addEventListener('change', () => {
+    const file = importProgFile.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      importStatus.style.color = '';
+      try{
+        const data = JSON.parse(reader.result);
+        if(!data || !Array.isArray(data.progressions)) throw new Error('形式が正しくありません');
+
+        let added = 0;
+        for(const item of data.progressions){
+          if(!item || typeof item.name !== 'string' || !Array.isArray(item.chords)) continue;
+          const chords = item.chords
+            .filter(c => c && Number.isInteger(c.root) && typeof c.qualityKey === 'string' && CHORD_TYPES[c.qualityKey])
+            .map(c => ({ root: ((c.root%12)+12)%12, qualityKey: c.qualityKey }));
+          if(chords.length === 0) continue;
+
+          const id = savedProgIdCounter++;
+          const record = { id, name: item.name, chords };
+          savedProgressions.push(record);
+          idbPut(record);
+          added++;
+        }
+
+        renderSavedProgList();
+        refreshMyProgOptions();
+        renderProgChips();
+        importStatus.textContent = added + '件の進行を読み込みました。';
+      }catch(err){
+        importStatus.style.color = 'var(--led-red)';
+        importStatus.textContent = 'ファイルの読み込みに失敗しました。TONERACKで書き出したJSONファイルを選んでください。';
+      }
+      importProgFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  // 初期表示
+  showChordResult(0, 'maj');
+
+  /* ============================================================
+     メトロノーム (lookahead scheduler)
+  ============================================================ */
+  const metroBeats = document.getElementById('metroBeats');
+  const metroPlayBtn = document.getElementById('metroPlayBtn');
+  const metroVisual = document.getElementById('metroVisual');
+
+  function renderMetroDots(){
+    const n = parseInt(metroBeats.value, 10);
+    metroVisual.innerHTML = '';
+    for(let i=0;i<n;i++){
+      const dot = document.createElement('div');
+      dot.className = 'metro-dot';
+      dot.dataset.beat = i;
+      metroVisual.appendChild(dot);
+    }
+  }
+  renderMetroDots();
+  metroBeats.addEventListener('change', renderMetroDots);
+
+  let metroPlaying = false;
+  let metroTimerId = null;
+  let metroNextNoteTime = 0;
+  let metroCurrentBeat = 0;
+  const METRO_LOOKAHEAD_MS = 25;
+  const METRO_SCHEDULE_AHEAD = 0.12;
+
+  function metroScheduleClick(beatNumber, time){
+    const accent = beatNumber === 0;
+    playClick(time, accent);
+    const ctx = getCtx();
+    const delayMs = Math.max(0, (time - ctx.currentTime) * 1000);
+    setTimeout(() => {
+      const dots = metroVisual.querySelectorAll('.metro-dot');
+      dots.forEach(d => d.classList.remove('lit','accent'));
+      const dot = dots[beatNumber];
+      if(dot){
+        dot.classList.add('lit');
+        if(accent) dot.classList.add('accent');
+        setTimeout(() => dot.classList.remove('lit','accent'), 110);
+      }
+    }, delayMs);
+  }
+
+  function metroScheduler(){
+    const ctx = getCtx();
+    const beatsPerMeasure = parseInt(metroBeats.value, 10);
+    while(metroNextNoteTime < ctx.currentTime + METRO_SCHEDULE_AHEAD){
+      metroScheduleClick(metroCurrentBeat, metroNextNoteTime);
+      metroNextNoteTime += 60/bpm;
+      metroCurrentBeat = (metroCurrentBeat+1) % beatsPerMeasure;
+    }
+    metroTimerId = setTimeout(metroScheduler, METRO_LOOKAHEAD_MS);
+  }
+
+  metroPlayBtn.addEventListener('click', () => {
+    if(metroPlaying){
+      metroPlaying = false;
+      clearTimeout(metroTimerId);
+      metroPlayBtn.textContent = '開始';
+      metroPlayBtn.classList.remove('is-playing');
+      return;
+    }
+    const ctx = getCtx();
+    metroPlaying = true;
+    metroCurrentBeat = 0;
+    metroNextNoteTime = ctx.currentTime + 0.05;
+    metroPlayBtn.textContent = '停止';
+    metroPlayBtn.classList.add('is-playing');
+    metroScheduler();
+  });
+
+})();
+</script>
+</body>
+</html>
