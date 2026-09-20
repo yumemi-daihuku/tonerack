@@ -139,7 +139,7 @@
     margin: 26px 0 0;
     flex-wrap: wrap;
   }
-  .tabbar input[type="radio"]{
+  .tab-control > input[type="radio"]{
     position:absolute;
     opacity:0;
     pointer-events:none;
@@ -158,12 +158,20 @@
     transition: color .15s ease, background .15s ease;
   }
   .tabbar label:hover{ color: var(--text); }
-  .tabbar input:focus-visible + label{ outline: 2px solid var(--amber); outline-offset: -2px; }
+  #tab-progression:focus-visible ~ .tabbar label[for="tab-progression"],
+  #tab-scale:focus-visible ~ .tabbar label[for="tab-scale"],
+  #tab-search:focus-visible ~ .tabbar label[for="tab-search"],
+  #tab-metronome:focus-visible ~ .tabbar label[for="tab-metronome"],
+  #tab-keyboard:focus-visible ~ .tabbar label[for="tab-keyboard"]{
+    outline: 2px solid var(--amber);
+    outline-offset: -2px;
+  }
 
   #tab-progression:checked ~ .tabbar label[for="tab-progression"],
   #tab-scale:checked ~ .tabbar label[for="tab-scale"],
   #tab-search:checked ~ .tabbar label[for="tab-search"],
-  #tab-metronome:checked ~ .tabbar label[for="tab-metronome"]{
+  #tab-metronome:checked ~ .tabbar label[for="tab-metronome"],
+  #tab-keyboard:checked ~ .tabbar label[for="tab-keyboard"]{
     background: var(--panel-raised);
     color: var(--text);
     box-shadow: inset 0 2px 0 var(--amber);
@@ -179,7 +187,8 @@
   #tab-progression:checked ~ .panels #panel-progression,
   #tab-scale:checked ~ .panels #panel-scale,
   #tab-search:checked ~ .panels #panel-search,
-  #tab-metronome:checked ~ .panels #panel-metronome{ display:block; }
+  #tab-metronome:checked ~ .panels #panel-metronome,
+  #tab-keyboard:checked ~ .panels #panel-keyboard{ display:block; }
 
   @media (max-width: 600px){
     .tabbar label{ padding: 9px 12px; font-size: 13px; }
@@ -287,6 +296,7 @@
   .white-key{
     position:relative;
     width: 38px;
+    cursor: pointer;
     height: 100%;
     background: #ece6d8;
     border: 1px solid #171512;
@@ -308,6 +318,7 @@
   .black-key{
     position:absolute;
     top:0;
+    cursor: pointer;
     width: 24px;
     height: 62%;
     background: #14120f;
@@ -317,6 +328,27 @@
   }
   .black-key.hit{ background: var(--amber-dim); }
   .black-key.hit.root{ background: var(--teal-dim); }
+
+  .white-key.flash, .black-key.flash{
+    filter: brightness(1.5);
+  }
+
+  .kb-hint{
+    position:absolute;
+    top: 6px;
+    left:0; right:0;
+    text-align:center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight:700;
+    color: var(--amber-dim);
+    pointer-events: none;
+  }
+  .black-key .kb-hint{
+    color: #c9a15c;
+    top:auto;
+    bottom:6px;
+  }
 
   .note-list{
     display:flex;
@@ -473,25 +505,27 @@
 
 <div class="wrap">
 
-  <div class="tabbar">
+  <div class="tab-control">
     <input type="radio" name="tab" id="tab-progression" checked>
-    <label for="tab-progression">コード進行</label>
-
     <input type="radio" name="tab" id="tab-scale">
-    <label for="tab-scale">スケール</label>
-
     <input type="radio" name="tab" id="tab-search">
-    <label for="tab-search">コード検索</label>
-
     <input type="radio" name="tab" id="tab-metronome">
-    <label for="tab-metronome">メトロノーム</label>
+    <input type="radio" name="tab" id="tab-keyboard">
+
+    <div class="tabbar">
+      <label for="tab-progression">コード進行</label>
+      <label for="tab-scale">スケール</label>
+      <label for="tab-search">コード検索</label>
+      <label for="tab-metronome">メトロノーム</label>
+      <label for="tab-keyboard">鍵盤</label>
+    </div>
 
     <div class="panels">
 
       <!-- ===================== コード進行 ===================== -->
       <section class="panel" id="panel-progression">
         <h2 class="panel-title">コード進行プレイヤー</h2>
-        <p class="panel-desc">定番のコード進行をキーを変えて再生できます。各コードは1小節ずつ鳴ります。</p>
+        <p class="panel-desc">定番のコード進行をキーを変えて再生できます。各コードは1小節ずつ鳴ります。メトロノームと合わせて使うと、次の拍の頭から自動でぴったり始まります。</p>
 
         <div class="row">
           <div class="field-group">
@@ -605,6 +639,27 @@
         </div>
 
         <div class="metro-visual" id="metroVisual"></div>
+      </section>
+
+      <!-- ===================== 鍵盤 ===================== -->
+      <section class="panel" id="panel-keyboard">
+        <h2 class="panel-title">鍵盤</h2>
+        <p class="panel-desc">鍵盤をクリック(タップ)すると自由に音を鳴らせます。指で押さえたままドラッグして弾くこともできます。</p>
+
+        <div class="row">
+          <div class="field-group">
+            <label for="freePianoOctave">表示オクターブ</label>
+            <select id="freePianoOctave">
+              <option value="2">低め (C2-C5)</option>
+              <option value="3" selected>標準 (C3-C6)</option>
+              <option value="4">高め (C4-C7)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="piano-wrap"><div class="piano" id="freePiano"></div></div>
+        <p class="search-hint" id="freePianoNowPlaying">鍵盤を押すとここに音名が表示されます。</p>
+        <p class="search-hint">PCキーボードでも演奏できます: A=ド W=ド# S=レ E=レ# D=ミ F=ファ T=ファ# G=ソ Y=ソ# H=ラ U=ラ# J=シ K=高いド</p>
       </section>
 
     </div>
@@ -816,12 +871,51 @@
   });
 
   /* ============================================================
+     共通: トランスポート(拍の基準時刻)
+     メトロノームとコード進行のどちらか先に再生した瞬間を「1拍目」とし、
+     もう片方は必ずこの拍グリッドに合わせて開始することで、
+     常にメトロノームのタイミングとコード進行が揃うようにする。
+  ============================================================ */
+  let transportStartTime = null;
+
+  function getTransportStart(){
+    if(transportStartTime === null){
+      transportStartTime = getCtx().currentTime + 0.05;
+    }
+    return transportStartTime;
+  }
+
+  // 両方止まったら基準時刻をリセットし、次回はその時点から新しく数え直す
+  function releaseTransportIfIdle(){
+    if(!progPlayingRef.value && !metroPlayingRef.value){
+      transportStartTime = null;
+    }
+  }
+  // 宣言順の都合上、後で定義される progPlaying / metroPlaying を
+  // 参照できるように簡易的な参照オブジェクトを使う
+  const progPlayingRef = { value: false };
+  const metroPlayingRef = { value: false };
+
+  // 基準時刻に揃えた「次の拍境界」の時刻を返す(intervalBeats拍ごとの区切り)
+  function nextAlignedTime(intervalBeats){
+    const ctx = getCtx();
+    const beatDur = 60/bpm;
+    const groupDur = beatDur * intervalBeats;
+    const anchor = getTransportStart();
+    const elapsed = ctx.currentTime - anchor;
+    if(elapsed <= 0) return anchor;
+    const groupsPassed = Math.ceil(elapsed / groupDur);
+    return anchor + groupsPassed * groupDur;
+  }
+
+  /* ============================================================
      ピアノ鍵盤コンポーネント
   ============================================================ */
   const WHITE_OFFSETS = [0,2,4,5,7,9,11];
   const BLACK_AFTER = { 0:1, 1:3, 3:6, 4:8, 5:10 }; // white-key index -> pitch class of black key following it (for offsets with a black key)
 
-  function buildPiano(container, octaves){
+  function buildPiano(container, octaves, startOctave){
+    const base = (startOctave === undefined) ? 3 : startOctave;
     container.innerHTML = '';
     const whiteKeyWidth = 38;
     let whiteIndex = 0;
@@ -832,18 +926,18 @@
         const key = document.createElement('div');
         key.className = 'white-key';
         key.dataset.pc = pc;
-        key.dataset.octave = 3+o;
+        key.dataset.octave = base+o;
         if(pc === 0){
           const label = document.createElement('div');
           label.className = 'label';
-          label.textContent = 'C' + (3+o);
+          label.textContent = 'C' + (base+o);
           key.appendChild(label);
         }
         container.appendChild(key);
 
         // black key after this white key (except after E and B, idx 2 and 6)
         if(idx !== 2 && idx !== 6){
-          blackKeys.push({ pc: pc+1, octave: 3+o, leftPos: (whiteIndex+1)*whiteKeyWidth - 12 });
+          blackKeys.push({ pc: pc+1, octave: base+o, leftPos: (whiteIndex+1)*whiteKeyWidth - 12 });
         }
         whiteIndex++;
       });
@@ -1045,6 +1139,8 @@
     stopNoteNodes(progActiveNodes);
     progActiveNodes = [];
     progPlaying = false;
+    progPlayingRef.value = false;
+    releaseTransportIfIdle();
     progPlayBtn.textContent = '再生';
     progPlayBtn.classList.remove('is-playing');
     progChordStrip.querySelectorAll('.chord-chip').forEach(c => c.classList.remove('active'));
@@ -1058,14 +1154,16 @@
     const ctx = getCtx();
     const beatsPerChord = 4;
     const chordDur = (60/bpm) * beatsPerChord;
-    const now = ctx.currentTime;
+    const now = nextAlignedTime(beatsPerChord);
 
     progPlaying = true;
+    progPlayingRef.value = true;
     progPlayBtn.textContent = '停止';
     progPlayBtn.classList.add('is-playing');
     progActiveNodes = [];
 
     const chips = progChordStrip.querySelectorAll('.chord-chip');
+    const ctxNow = ctx.currentTime;
 
     chords.forEach((c, i) => {
       const notes = chordNotes(c.root, c.qualityKey);
@@ -1073,14 +1171,16 @@
       const nodes = playChord(notes, start, chordDur*0.92);
       progActiveNodes.push(...nodes);
 
+      const delayMs = Math.max(0, (start - ctxNow) * 1000);
       const t1 = setTimeout(() => {
         chips.forEach(ch => ch.classList.remove('active'));
         if(chips[i]) chips[i].classList.add('active');
-      }, i*chordDur*1000);
+      }, delayMs);
       progTimers.push(t1);
     });
 
-    const totalMs = chords.length * chordDur * 1000;
+    const totalDelayMs = Math.max(0, (now - ctxNow) * 1000);
+    const totalMs = totalDelayMs + chords.length * chordDur * 1000;
     const tEnd = setTimeout(stopProgression, totalMs + 60);
     progTimers.push(tEnd);
   });
@@ -1103,6 +1203,7 @@
   });
 
   buildPiano(scalePianoEl, 2);
+  attachPianoPlayable(scalePianoEl);
 
   function currentScaleNotes(){
     const root = parseInt(scaleRoot.value, 10);
@@ -1172,6 +1273,7 @@
   }
 
   buildPiano(searchPianoEl, 2);
+  attachPianoPlayable(searchPianoEl);
 
   let currentSearchChord = null;
 
@@ -1445,19 +1547,131 @@
   metroPlayBtn.addEventListener('click', () => {
     if(metroPlaying){
       metroPlaying = false;
+      metroPlayingRef.value = false;
+      releaseTransportIfIdle();
       clearTimeout(metroTimerId);
       metroPlayBtn.textContent = '開始';
       metroPlayBtn.classList.remove('is-playing');
       return;
     }
-    const ctx = getCtx();
     metroPlaying = true;
+    metroPlayingRef.value = true;
     metroCurrentBeat = 0;
-    metroNextNoteTime = ctx.currentTime + 0.05;
+    metroNextNoteTime = nextAlignedTime(1);
     metroPlayBtn.textContent = '停止';
     metroPlayBtn.classList.add('is-playing');
     metroScheduler();
   });
+
+  /* ============================================================
+     鍵盤パネル(自由演奏)
+  ============================================================ */
+  const freePianoEl = document.getElementById('freePiano');
+  const freePianoOctave = document.getElementById('freePianoOctave');
+  const freePianoNowPlaying = document.getElementById('freePianoNowPlaying');
+
+  function attachPianoPlayable(container){
+    const keys = container.querySelectorAll('.white-key, .black-key');
+    keys.forEach(key => {
+      const pc = parseInt(key.dataset.pc, 10);
+      const oct = parseInt(key.dataset.octave, 10);
+
+      const pressKey = () => {
+        const ctx = getCtx();
+        playNote(pc, oct, ctx.currentTime, 1.1, 1);
+        key.classList.add('flash');
+        if(container === freePianoEl && freePianoNowPlaying){
+          freePianoNowPlaying.textContent = '再生中: ' + spell(pc, pc) + oct;
+        }
+        setTimeout(() => key.classList.remove('flash'), 180);
+      };
+
+      key.addEventListener('mousedown', (e) => { e.preventDefault(); pressKey(); });
+      key.addEventListener('touchstart', (e) => { e.preventDefault(); pressKey(); }, { passive:false });
+
+      // 押したままドラッグして隣の鍵盤も鳴らせるように
+      key.addEventListener('mouseenter', (e) => {
+        if(e.buttons === 1) pressKey();
+      });
+    });
+  }
+
+  function renderFreePiano(){
+    const startOctave = parseInt(freePianoOctave.value, 10);
+    buildPiano(freePianoEl, 3, startOctave);
+    attachPianoPlayable(freePianoEl);
+    addKeyboardHintLabels();
+  }
+
+  // ---- PCキーボードでの演奏 ----
+  // ド=A ド#=W レ=S レ#=E ミ=D ファ=F ファ#=T ソ=G ソ#=Y ラ=H ラ#=U シ=J 高いド=K
+  const KEYBOARD_NOTE_MAP = {
+    'a':0, 'w':1, 's':2, 'e':3, 'd':4, 'f':5, 't':6, 'g':7, 'y':8, 'h':9, 'u':10, 'j':11, 'k':12
+  };
+  const pressedComputerKeys = new Set();
+
+  function findFreePianoKeyEl(pc, oct){
+    return freePianoEl.querySelector(
+      '.white-key[data-pc="'+pc+'"][data-octave="'+oct+'"], .black-key[data-pc="'+pc+'"][data-octave="'+oct+'"]'
+    );
+  }
+
+  function offsetToPitch(offset){
+    const baseOctave = parseInt(freePianoOctave.value, 10);
+    return { pc: offset % 12, oct: baseOctave + Math.floor(offset/12) };
+  }
+
+  function addKeyboardHintLabels(){
+    Object.keys(KEYBOARD_NOTE_MAP).forEach(k => {
+      const { pc, oct } = offsetToPitch(KEYBOARD_NOTE_MAP[k]);
+      const keyEl = findFreePianoKeyEl(pc, oct);
+      if(!keyEl) return;
+      const hint = document.createElement('div');
+      hint.className = 'kb-hint';
+      hint.textContent = k.toUpperCase();
+      keyEl.appendChild(hint);
+    });
+  }
+
+  function isTypingInField(target){
+    const tag = target && target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
+
+  function isKeyboardTabActive(){
+    const el = document.getElementById('tab-keyboard');
+    return !!(el && el.checked);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if(e.repeat) return;
+    if(isTypingInField(e.target)) return;
+    if(!isKeyboardTabActive()) return;
+    const k = e.key.toLowerCase();
+    if(!(k in KEYBOARD_NOTE_MAP)) return;
+    if(pressedComputerKeys.has(k)) return;
+    pressedComputerKeys.add(k);
+
+    const { pc, oct } = offsetToPitch(KEYBOARD_NOTE_MAP[k]);
+    const ctx = getCtx();
+    playNote(pc, oct, ctx.currentTime, 1.1, 1);
+    freePianoNowPlaying.textContent = '再生中: ' + spell(pc, pc) + oct;
+
+    const keyEl = findFreePianoKeyEl(pc, oct);
+    if(keyEl) keyEl.classList.add('flash');
+  });
+
+  document.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    if(!(k in KEYBOARD_NOTE_MAP)) return;
+    pressedComputerKeys.delete(k);
+    const { pc, oct } = offsetToPitch(KEYBOARD_NOTE_MAP[k]);
+    const keyEl = findFreePianoKeyEl(pc, oct);
+    if(keyEl) keyEl.classList.remove('flash');
+  });
+
+  freePianoOctave.addEventListener('change', renderFreePiano);
+  renderFreePiano();
 
 })();
 </script>
