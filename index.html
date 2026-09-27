@@ -725,12 +725,11 @@
 
       <!-- ===================== 鼻歌 ===================== -->
       <section class="panel" id="panel-hum">
-        <h2 class="panel-title">鼻歌から音階</h2>
-        <p class="panel-desc">マイクに鼻歌を歌うと、音の高さをリアルタイムに検出してメロディをドレミで記録し、合いそうなスケール(キー)を推定します。</p>
+        <h2 class="panel-title">鼻歌の音程</h2>
+        <p class="panel-desc">マイクに鼻歌を歌うと、今出している音の高さをリアルタイムに表示します。</p>
 
         <div class="row">
           <button class="btn primary" id="humMicBtn">マイクを開始</button>
-          <button class="btn" id="humClearBtn">メロディをクリア</button>
         </div>
         <p class="search-hint" id="humStatus">マイクの使用にはブラウザの許可が必要です。ヘッドホン推奨(スピーカーだと誤検出しやすくなります)。</p>
 
@@ -741,14 +740,6 @@
         </div>
 
         <div class="piano-wrap"><div class="piano" id="humPiano"></div></div>
-
-        <p class="subhead">検出したメロディ</p>
-        <div class="chord-strip" id="humMelodyChips"></div>
-        <p class="search-hint" id="humMelodyEmpty">まだ何も検出していません。</p>
-
-        <p class="subhead">合いそうなスケール</p>
-        <div class="note-list" id="humScaleGuesses"></div>
-        <p class="search-hint" id="humScaleEmpty">メロディを2音以上歌うと候補が表示されます。</p>
       </section>
 
     </div>
@@ -1795,18 +1786,17 @@
      鼻歌パネル(マイクからのピッチ検出 → メロディ&スケール推定)
   ============================================================ */
   const humMicBtn = document.getElementById('humMicBtn');
-  const humClearBtn = document.getElementById('humClearBtn');
   const humStatus = document.getElementById('humStatus');
   const humNoteName = document.getElementById('humNoteName');
   const humNeedle = document.getElementById('humNeedle');
   const humFreq = document.getElementById('humFreq');
   const humPianoEl = document.getElementById('humPiano');
-  const humMelodyChips = document.getElementById('humMelodyChips');
-  const humMelodyEmpty = document.getElementById('humMelodyEmpty');
-  const humScaleGuesses = document.getElementById('humScaleGuesses');
-  const humScaleEmpty = document.getElementById('humScaleEmpty');
 
   buildPiano(humPianoEl, 3);
+
+  // 鼻歌パネルでは音名をドレミで表示する
+  const SOLFEGE_NAMES = ['ド','ド#','レ','レ#','ミ','ファ','ファ#','ソ','ソ#','ラ','ラ#','シ'];
+  function solfege(pc){ return SOLFEGE_NAMES[((pc%12)+12)%12]; }
 
   let humStream = null;
   let humSource = null;
@@ -1814,14 +1804,6 @@
   let humRafId = null;
   let humRunning = false;
 
-  let humMelody = [];
-  let humUsedPcs = new Set();
-
-  let humHoldPc = null;
-  let humHoldCount = 0;
-  let humLoggedThisHold = false;
-
-  const HUM_STABLE_FRAMES = 6;
   const HUM_SILENCE_RMS = 0.01;
 
   // 自己相関法によるピッチ検出(マイク入力から基本周波数を推定する一般的な手法)
@@ -1876,7 +1858,7 @@
   }
 
   function updateTuner(pc, oct, cents, freq){
-    humNoteName.textContent = spell(pc, pc) + oct;
+    humNoteName.textContent = solfege(pc) + oct;
     humFreq.textContent = Math.round(freq) + ' Hz';
     const pos = Math.max(0, Math.min(100, 50 + cents));
     humNeedle.style.left = pos + '%';
@@ -1892,61 +1874,6 @@
     highlightPiano(humPianoEl, [], -1);
   }
 
-  function addMelodyNote(pc, oct){
-    humMelody.push({ pc, oct });
-    humUsedPcs.add(pc);
-    renderMelody();
-    renderScaleGuesses();
-  }
-
-  function renderMelody(){
-    humMelodyChips.innerHTML = '';
-    humMelodyEmpty.style.display = humMelody.length === 0 ? '' : 'none';
-    humMelody.forEach(n => {
-      const chip = document.createElement('div');
-      chip.className = 'chord-chip';
-      chip.textContent = spell(n.pc, n.pc) + n.oct;
-      humMelodyChips.appendChild(chip);
-    });
-  }
-
-  function findMatchingScales(usedPcs){
-    if(usedPcs.size === 0) return [];
-    const matches = [];
-    for(let root=0; root<12; root++){
-      Object.keys(SCALE_TYPES).forEach(key => {
-        const scalePcs = new Set(SCALE_TYPES[key].intervals.map(iv => (root+iv)%12));
-        let ok = true;
-        usedPcs.forEach(pc => { if(!scalePcs.has(pc)) ok = false; });
-        if(ok) matches.push({ root, key, size: SCALE_TYPES[key].intervals.length });
-      });
-    }
-    matches.sort((a,b) => a.size - b.size);
-    return matches.slice(0, 6);
-  }
-
-  function renderScaleGuesses(){
-    const matches = findMatchingScales(humUsedPcs);
-    humScaleGuesses.innerHTML = '';
-    humScaleEmpty.style.display = matches.length === 0 ? '' : 'none';
-    matches.forEach(m => {
-      const pill = document.createElement('span');
-      pill.className = 'note-pill';
-      pill.textContent = spell(m.root, m.root) + ' ' + SCALE_TYPES[m.key].label;
-      humScaleGuesses.appendChild(pill);
-    });
-  }
-
-  humClearBtn.addEventListener('click', () => {
-    humMelody = [];
-    humUsedPcs = new Set();
-    humHoldPc = null;
-    humHoldCount = 0;
-    humLoggedThisHold = false;
-    renderMelody();
-    renderScaleGuesses();
-  });
-
   function humFrameTick(){
     if(!humRunning) return;
     const buf = new Float32Array(humAnalyser.fftSize);
@@ -1954,26 +1881,11 @@
     const { freq, rms } = autoCorrelatePitch(buf, getCtx().sampleRate);
 
     if(rms < HUM_SILENCE_RMS || freq <= 0 || freq < 70 || freq > 1200){
-      humHoldPc = null;
-      humHoldCount = 0;
-      humLoggedThisHold = false;
       resetTunerDisplay();
     } else {
       const midi = 69 + 12*Math.log2(freq/440);
       const { pc, oct, cents } = midiToPcOctCents(midi);
       updateTuner(pc, oct, cents, freq);
-
-      if(pc === humHoldPc){
-        humHoldCount++;
-      } else {
-        humHoldPc = pc;
-        humHoldCount = 1;
-        humLoggedThisHold = false;
-      }
-      if(!humLoggedThisHold && humHoldCount >= HUM_STABLE_FRAMES){
-        addMelodyNote(pc, oct);
-        humLoggedThisHold = true;
-      }
     }
 
     humRafId = requestAnimationFrame(humFrameTick);
@@ -2014,9 +1926,6 @@
     humMicBtn.classList.remove('is-playing');
     humStatus.style.color = '';
     humStatus.textContent = 'マイクの使用にはブラウザの許可が必要です。ヘッドホン推奨(スピーカーだと誤検出しやすくなります)。';
-    humHoldPc = null;
-    humHoldCount = 0;
-    humLoggedThisHold = false;
     resetTunerDisplay();
   }
 
@@ -2024,8 +1933,6 @@
     if(humRunning) stopHumMic(); else startHumMic();
   });
 
-  renderMelody();
-  renderScaleGuesses();
   resetTunerDisplay();
 
 })();
